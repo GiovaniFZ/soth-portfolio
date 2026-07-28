@@ -1,10 +1,21 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { gsap } from 'gsap';
 
 	let { menuOpen = false, toggleMenu } = $props<{
 		menuOpen?: boolean;
 		toggleMenu?: () => void;
 	}>();
+
+	let iconRef: SVGElement;
+
+	$effect(() => {
+		gsap.to(iconRef, {
+			rotation: menuOpen ? 90 : 0,
+			ease: 'back.out(1.7)',
+			duration: 0.5
+		});
+	});
 </script>
 
 <footer
@@ -147,12 +158,15 @@
 	<!-- "..." (More) Toggle Button -->
 	<button
 		onclick={toggleMenu}
-		class="group flex cursor-pointer items-center justify-center rounded-full px-2.5 py-1.5 text-xs font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:scale-[1.05] active:scale-[0.95] sm:px-3.5 sm:text-sm {menuOpen
+		class="group flex cursor-pointer items-center justify-center rounded-full px-2.5 py-1.5 text-xs font-semibold transition-all duration-300 {menuOpen
+			? ''
+			: 'hover:-translate-y-0.5 hover:scale-[1.05] active:scale-[0.95]'} sm:px-3.5 sm:text-sm {menuOpen
 			? 'bg-white/10 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]'
 			: 'text-white/60 hover:bg-white/5 hover:text-white'}"
 		aria-label="More options"
 	>
 		<svg
+			bind:this={iconRef}
 			xmlns="http://www.w3.org/2000/svg"
 			width="18"
 			height="18"
@@ -162,9 +176,6 @@
 			stroke-width="2.5"
 			stroke-linecap="round"
 			stroke-linejoin="round"
-			class="transition-transform duration-500 ease-out {menuOpen
-				? 'rotate-90'
-				: 'group-hover:scale-120 group-hover:rotate-180'}"
 		>
 			<circle cx="12" cy="12" r="1.2" />
 			<circle cx="19" cy="12" r="1.2" />

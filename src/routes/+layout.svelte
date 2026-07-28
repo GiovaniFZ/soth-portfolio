@@ -4,9 +4,11 @@
 	import Header from '$lib/components/Header.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import { page } from '$app/stores';
+	import { gsap } from 'gsap';
 
 	let { children } = $props();
 	let menuOpen = $state(false);
+	let contentWrapper: HTMLDivElement;
 
 	// Toggle body class to prevent scrolling when menu is open
 	$effect(() => {
@@ -14,6 +16,33 @@
 			document.body.classList.add('overflow-hidden');
 		} else {
 			document.body.classList.remove('overflow-hidden');
+		}
+	});
+
+	// GSAP Animation for the content wrapper
+	$effect(() => {
+		if (menuOpen) {
+			gsap.to(contentWrapper, {
+				x: 280,
+				scale: 0.82,
+				borderRadius: '40px',
+				borderColor: 'rgba(255, 255, 255, 0.12)',
+				boxShadow: '-30px 30px 80px rgba(0, 0, 0, 0.8)',
+				duration: 0.7,
+				ease: 'back.out(1.4)',
+				overwrite: true
+			});
+		} else {
+			gsap.to(contentWrapper, {
+				x: 0,
+				scale: 1,
+				borderRadius: '0px',
+				borderColor: 'transparent',
+				boxShadow: '0px 0px 0px rgba(0, 0, 0, 0)',
+				duration: 0.5,
+				ease: 'power2.inOut',
+				overwrite: true
+			});
 		}
 	});
 </script>
@@ -50,7 +79,7 @@
 
 	<!-- Left Slide-out Menu -->
 	<div
-		class="fixed inset-y-0 left-0 z-10 flex w-[280px] flex-col justify-between p-6 transition-all duration-600 ease-[cubic-bezier(0.16,1,0.3,1)] select-none {menuOpen
+		class="fixed inset-y-0 left-0 z-20 flex w-[280px] flex-col justify-between p-6 transition-all duration-600 ease-[cubic-bezier(0.16,1,0.3,1)] select-none {menuOpen
 			? 'pointer-events-auto opacity-100'
 			: 'pointer-events-none opacity-0'}"
 		style="transform: translateX({menuOpen ? '0' : '-40px'});"
@@ -328,38 +357,49 @@
 		</div>
 	</div>
 
+	<!-- Backdrop/Overlay (behind wrapper when menu open to capture clicks on empty space and content) -->
+	{#if menuOpen}
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div
+			onclick={() => (menuOpen = false)}
+			class="fixed inset-0 z-10 cursor-pointer bg-black/20 backdrop-blur-[2px] transition-all duration-500"
+		></div>
+	{/if}
+
 	<!-- Main Content Wrapper (Slides right and zooms out with smooth rounded corners) -->
 	<div
-		class="content-wrapper relative z-20 min-h-screen w-full border border-transparent bg-slate-950 shadow-none {menuOpen
-			? 'active-menu'
+		bind:this={contentWrapper}
+		class="content-wrapper relative z-30 min-h-screen w-full border bg-slate-950 {menuOpen
+			? 'pointer-events-none h-screen overflow-hidden'
 			: ''}"
 	>
-		<!-- Semi-transparent overlay to tap-close the menu -->
-		{#if menuOpen}
-			<!-- svelte-ignore a11y_click_events_have_key_events -->
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<div
-				onclick={() => (menuOpen = false)}
-				class="absolute inset-0 z-50 cursor-pointer rounded-[inherit] bg-black/10 backdrop-blur-[1px] transition-all duration-500"
-			></div>
-		{/if}
-
 		<!-- Header at the top -->
-		<div class="relative z-40 flex justify-center p-4">
+		<div
+			class="relative z-40 flex justify-center p-4 transition-all duration-600 ease-[cubic-bezier(0.16,1,0.3,1)]"
+			class:-translate-y-24={menuOpen}
+			class:opacity-0={menuOpen}
+			class:pointer-events-none={menuOpen}
+		>
 			<Header />
 		</div>
 
 		<!-- Main content -->
-		<main class="relative z-20 min-h-screen w-full px-4 pt-4 pb-32">
+		<main class="relative z-20 w-full px-4 pt-4 pb-32">
 			<div class="mx-auto max-w-6xl">
 				{@render children()}
 			</div>
 		</main>
+	</div>
 
-		<!-- Footer navigation fixed inside the wrapper -->
-		<div class="fixed right-0 bottom-4 left-0 z-50 flex justify-center px-4">
-			<Footer {menuOpen} toggleMenu={() => (menuOpen = !menuOpen)} />
-		</div>
+	<!-- Footer navigation fixed at root level (stays fixed even during scroll/transform) -->
+	<div
+		class="fixed right-0 bottom-4 left-0 z-50 flex justify-center px-4 transition-all duration-600 ease-[cubic-bezier(0.16,1,0.3,1)]"
+		class:translate-y-28={menuOpen}
+		class:opacity-0={menuOpen}
+		class:pointer-events-none={menuOpen}
+	>
+		<Footer {menuOpen} toggleMenu={() => (menuOpen = !menuOpen)} />
 	</div>
 </div>
 
@@ -371,20 +411,7 @@
 	}
 
 	.content-wrapper {
-		transition:
-			transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-			border-radius 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-			box-shadow 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-			border-color 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 		transform-origin: left center;
-	}
-
-	.active-menu {
-		transform: scale(0.85) translateX(280px);
-		border-radius: 32px;
-		border-color: rgba(255, 255, 255, 0.08);
-		box-shadow: -20px 20px 60px rgba(0, 0, 0, 0.7);
-		overflow: hidden;
-		pointer-events: none; /* Let clicks hit the overlay instead */
+		will-change: transform, border-radius;
 	}
 </style>
